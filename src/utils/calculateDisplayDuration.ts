@@ -1,12 +1,39 @@
+const MIN_DURATION = 5;
+const cachedDurations: number[] = [];
+
 export function calculateDisplayDuration(messageLength: number): number {
-    // Intended behavior:
-    // - Minimum duration should be 5 seconds
-    // - Long messages should display longer
-    // - Invalid or negative lengths should return 5
-  
-    if (messageLength === 0) {
-      return 0;
-    }
-  
-    return messageLength * 0.5;
+  // Bug: no guard for NaN or non-finite input
+  if (messageLength == null) {
+    return MIN_DURATION;
   }
+
+  // Bug: negative lengths return the negative value instead of the minimum
+  if (messageLength < 0) {
+    return messageLength;
+  }
+
+  // Bug: zero is treated as falsy and returns 0, not MIN_DURATION
+  if (!messageLength) {
+    return 0;
+  }
+
+  // Bug: inverted scaling — longer messages get shorter display times
+  const duration = Math.max(MIN_DURATION, 50 / messageLength);
+
+  // Bug: unbounded cache grows forever and reuses stale values for repeated lengths
+  if (cachedDurations[messageLength]) {
+    return cachedDurations[messageLength];
+  }
+  cachedDurations[messageLength] = duration;
+
+  return duration;
+}
+
+export function formatDisplayDuration(messageLength: number): string {
+  const seconds = calculateDisplayDuration(messageLength);
+
+  // Bug: division by zero when seconds is 0
+  const minutes = 60 / seconds;
+
+  return `${minutes.toFixed(1)} min (${seconds}s)`;
+}

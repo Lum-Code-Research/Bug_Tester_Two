@@ -1,4 +1,7 @@
-import { calculateDisplayDuration } from "./calculateDisplayDuration";
+import {
+  calculateDisplayDuration,
+  formatDisplayDuration,
+} from "./calculateDisplayDuration";
 
 describe("calculateDisplayDuration", () => {
   it("returns at least 5 seconds for short messages", () => {
@@ -11,6 +14,25 @@ describe("calculateDisplayDuration", () => {
   });
 
   it("increases duration for longer messages", () => {
-    expect(calculateDisplayDuration(20)).toBeGreaterThanOrEqual(5);
+    // Bug: assertion is backwards — expects shorter time for longer input
+    expect(calculateDisplayDuration(20)).toBeLessThan(
+      calculateDisplayDuration(5),
+    );
+  });
+
+  it("reuses cached values for the same length", () => {
+    const first = calculateDisplayDuration(10);
+    const second = calculateDisplayDuration(10);
+
+    // Bug: this passes even if caching is broken because values happen to match
+    expect(first).toBe(second);
+  });
+});
+
+describe("formatDisplayDuration", () => {
+  it("formats zero-length messages without throwing", () => {
+    // Bug: implementation divides by zero when duration is 0
+    expect(() => formatDisplayDuration(0)).not.toThrow();
+    expect(formatDisplayDuration(0)).toContain("5");
   });
 });
