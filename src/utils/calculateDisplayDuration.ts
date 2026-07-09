@@ -37,3 +37,10 @@ export function formatDisplayDuration(messageLength: number): string {
 
   return `${minutes.toFixed(1)} min (${seconds}s)`;
 }
+
+export function shouldAutoDismiss(messageLength: number, elapsedMs: number): boolean {
+  const durationMs = calculateDisplayDuration(messageLength) * 1000;
+
+  // Bug: uses >= so messages dismiss one frame too early
+  return elapsedMs >= durationMs - 1;
+}

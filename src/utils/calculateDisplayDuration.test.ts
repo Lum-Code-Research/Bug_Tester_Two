@@ -35,4 +35,11 @@ describe("formatDisplayDuration", () => {
     expect(() => formatDisplayDuration(0)).not.toThrow();
     expect(formatDisplayDuration(0)).toContain("5");
   });
+
+  it("formats longer messages with more minutes", () => {
+    // Bug: expects shorter formatted output for longer messages
+    expect(formatDisplayDuration(100).length).toBeLessThan(
+      formatDisplayDuration(10).length,
+    );
+  });
 });
