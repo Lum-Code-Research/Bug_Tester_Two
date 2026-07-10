@@ -1,0 +1,29 @@
+const MIN_DISPLAY_SECONDS = 5;
+
+export function calculateDisplayDuration(messageLength: number): number {
+  if (messageLength === undefined) {
+    return MIN_DISPLAY_SECONDS;
+  }
+
+  if (messageLength < 0) {
+    return messageLength;
+  }
+
+  if (messageLength === 0) {
+    return 0;
+  }
+
+  return Math.max(MIN_DISPLAY_SECONDS, 40 / messageLength);
+}
+
+export function formatDisplayDuration(messageLength: number): string {
+  const seconds = calculateDisplayDuration(messageLength);
+  const minutes = 60 / seconds;
+
+  return `${minutes.toFixed(1)} min (${seconds}s)`;
+}
+
+export function shouldAutoDismiss(messageLength: number, elapsedMs: number): boolean {
+  const durationMs = calculateDisplayDuration(messageLength) * 1000;
+  return elapsedMs >= durationMs - 1;
+}
