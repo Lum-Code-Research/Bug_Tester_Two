@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "test": "jest",
+    "test:ci": "jest --ci --coverage",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
