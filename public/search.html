@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BoardLite — Search</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>BoardLite</h1>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/search.html">Search</a>
+        <a href="/post.html">New post</a>
+        <a href="/login.html">Login</a>
+        <a href="/admin.html">Admin</a>
+        <a href="/files.html">Files</a>
+        <a href="/prefs.html">Preferences</a>
+        <a href="/formula.html">Formula</a>
+        <a href="/preview.html">URL preview</a>
+        <a href="/status.html">Status</a>
+      </nav>
+    </header>
+    <main>
+      <section class="panel">
+        <h2>Search posts</h2>
+        <form method="GET" action="/api/search">
+          <label for="q">Query</label>
+          <input id="q" name="q" type="text" placeholder="find messages…" />
+          <button type="submit">Search</button>
+        </form>
+        <p class="muted">Submits to the server search endpoint (HTML response).</p>
+      </section>
+    </main>
+  </body>
+</html>

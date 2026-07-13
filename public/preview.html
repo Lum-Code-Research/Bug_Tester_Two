@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BoardLite — URL preview</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>BoardLite</h1>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/search.html">Search</a>
+        <a href="/post.html">New post</a>
+        <a href="/login.html">Login</a>
+        <a href="/admin.html">Admin</a>
+        <a href="/files.html">Files</a>
+        <a href="/prefs.html">Preferences</a>
+        <a href="/formula.html">Formula</a>
+        <a href="/preview.html">URL preview</a>
+        <a href="/status.html">Status</a>
+      </nav>
+    </header>
+    <main>
+      <section class="panel">
+        <h2>Preview remote URL</h2>
+        <form method="GET" action="/api/proxy">
+          <label for="url">URL</label>
+          <input id="url" name="url" type="url" placeholder="https://example.com" />
+          <button type="submit">Fetch</button>
+        </form>
+      </section>
+      <section class="panel">
+        <h2>Send webhook</h2>
+        <form id="webhook-form">
+          <label for="callbackUrl">Callback URL</label>
+          <input id="callbackUrl" type="url" placeholder="https://example.com/hook" />
+          <button type="submit">Send</button>
+        </form>
+        <pre id="webhook-result" class="result"></pre>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

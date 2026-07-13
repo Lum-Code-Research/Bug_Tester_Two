@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BoardLite — Preferences</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header>
+      <h1>BoardLite</h1>
+      <nav>
+        <a href="/">Home</a>
+        <a href="/search.html">Search</a>
+        <a href="/post.html">New post</a>
+        <a href="/login.html">Login</a>
+        <a href="/admin.html">Admin</a>
+        <a href="/files.html">Files</a>
+        <a href="/prefs.html">Preferences</a>
+        <a href="/formula.html">Formula</a>
+        <a href="/preview.html">URL preview</a>
+        <a href="/status.html">Status</a>
+      </nav>
+    </header>
+    <main>
+      <section class="panel">
+        <h2>Merge preferences</h2>
+        <form id="prefs-form">
+          <label for="settings">Settings JSON</label>
+          <textarea id="settings" rows="6">{"theme":"dark","compact":true}</textarea>
+          <button type="submit">Save preferences</button>
+        </form>
+        <pre id="prefs-result" class="result"></pre>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>
