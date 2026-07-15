@@ -51,6 +51,12 @@ describe("BoardLite preferences and formulas", () => {
     expect(evaluateArithmetic("(2 + 3) * 4")).toBe(20);
   });
 
+  it("evaluates unary minus expressions", () => {
+    expect(evaluateArithmetic("-1")).toBe(-1);
+    expect(evaluateArithmetic("-(2 + 3)")).toBe(-5);
+    expect(evaluateArithmetic("2 * -3")).toBe(-6);
+  });
+
   it("rejects division by zero", () => {
     expect(() => evaluateArithmetic("1 / 0")).toThrow(HttpError);
   });
@@ -71,6 +77,11 @@ describe("BoardLite path and auth helpers", () => {
 
   it("rejects forged JWT tokens", () => {
     expect(() => verifyAuthToken("not.a.token")).toThrow(HttpError);
+  });
+
+  it("preserves invalid JWT payload errors", () => {
+    const token = signAuthToken({ sub: "", username: "ada" });
+    expect(() => verifyAuthToken(token)).toThrow("Invalid token payload");
   });
 
   it("round-trips a valid JWT", () => {

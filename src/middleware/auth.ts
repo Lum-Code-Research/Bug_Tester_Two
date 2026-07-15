@@ -28,7 +28,10 @@ export function verifyAuthToken(token: string): AuthTokenPayload {
       throw new HttpError(401, "Invalid token payload");
     }
     return { sub, username };
-  } catch {
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
     throw new HttpError(401, "Invalid or expired token");
   }
 }

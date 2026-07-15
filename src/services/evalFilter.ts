@@ -7,6 +7,7 @@ function tokenize(expression: string): string[] {
 function precedence(op: string): number {
   if (op === "+" || op === "-") return 1;
   if (op === "*" || op === "/") return 2;
+  if (op === "u-") return 3;
   return 0;
 }
 
@@ -28,6 +29,23 @@ function applyOp(a: number, b: number, op: string): number {
   }
 }
 
+function applyTopOperator(values: number[], op: string): void {
+  const b = values.pop();
+  if (b === undefined) {
+    throw new HttpError(400, "Malformed expression");
+  }
+  if (op === "u-") {
+    values.push(-b);
+    return;
+  }
+
+  const a = values.pop();
+  if (a === undefined) {
+    throw new HttpError(400, "Malformed expression");
+  }
+  values.push(applyOp(a, b, op));
+}
+
 /** Safe arithmetic evaluator: numbers and + - * / ( ) only. No eval. */
 export function evaluateArithmetic(expression: string): number {
   const tokens = tokenize(expression);
@@ -37,29 +55,31 @@ export function evaluateArithmetic(expression: string): number {
 
   const values: number[] = [];
   const ops: string[] = [];
+  let expectsOperand = true;
 
   for (const token of tokens) {
     if (/^\d+(\.\d+)?$/.test(token)) {
       values.push(Number(token));
+      expectsOperand = false;
       continue;
     }
     if (token === "(") {
       ops.push(token);
+      expectsOperand = true;
       continue;
     }
     if (token === ")") {
       while (ops.length && ops[ops.length - 1] !== "(") {
-        const op = ops.pop() as string;
-        const b = values.pop();
-        const a = values.pop();
-        if (a === undefined || b === undefined) {
-          throw new HttpError(400, "Malformed expression");
-        }
-        values.push(applyOp(a, b, op));
+        applyTopOperator(values, ops.pop() as string);
       }
       if (!ops.length || ops.pop() !== "(") {
         throw new HttpError(400, "Mismatched parentheses");
       }
+      expectsOperand = false;
+      continue;
+    }
+    if (token === "-" && expectsOperand) {
+      ops.push("u-");
       continue;
     }
 
@@ -68,15 +88,10 @@ export function evaluateArithmetic(expression: string): number {
       ops[ops.length - 1] !== "(" &&
       precedence(ops[ops.length - 1]) >= precedence(token)
     ) {
-      const op = ops.pop() as string;
-      const b = values.pop();
-      const a = values.pop();
-      if (a === undefined || b === undefined) {
-        throw new HttpError(400, "Malformed expression");
-      }
-      values.push(applyOp(a, b, op));
+      applyTopOperator(values, ops.pop() as string);
     }
     ops.push(token);
+    expectsOperand = true;
   }
 
   while (ops.length) {
@@ -84,12 +99,7 @@ export function evaluateArithmetic(expression: string): number {
     if (op === "(") {
       throw new HttpError(400, "Mismatched parentheses");
     }
-    const b = values.pop();
-    const a = values.pop();
-    if (a === undefined || b === undefined) {
-      throw new HttpError(400, "Malformed expression");
-    }
-    values.push(applyOp(a, b, op));
+    applyTopOperator(values, op);
   }
 
   if (values.length !== 1) {

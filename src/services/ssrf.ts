@@ -1,5 +1,6 @@
 import { lookup } from "dns/promises";
 import net from "net";
+import { Agent, fetch, type Response } from "undici";
 import { HttpError } from "../middleware/errors";
 
 const ALLOWED_HOSTS = new Set(
@@ -26,7 +27,13 @@ function isPrivateIp(ip: string): boolean {
   return false;
 }
 
-async function assertSafeOutboundUrl(rawUrl: string): Promise<URL> {
+interface SafeOutboundUrl {
+  url: URL;
+  address: string;
+  family: number;
+}
+
+async function assertSafeOutboundUrl(rawUrl: string): Promise<SafeOutboundUrl> {
   let parsed: URL;
   try {
     parsed = new URL(rawUrl);
@@ -43,11 +50,12 @@ async function assertSafeOutboundUrl(rawUrl: string): Promise<URL> {
     throw new HttpError(400, "Host is not in the allowlist");
   }
 
-  if (net.isIP(hostname)) {
+  const family = net.isIP(hostname);
+  if (family) {
     if (isPrivateIp(hostname)) {
       throw new HttpError(400, "Private IP addresses are not allowed");
     }
-    return parsed;
+    return { url: parsed, address: hostname, family };
   }
 
   const records = await lookup(hostname, { all: true });
@@ -55,12 +63,28 @@ async function assertSafeOutboundUrl(rawUrl: string): Promise<URL> {
     throw new HttpError(400, "Host resolves to a private address");
   }
 
-  return parsed;
+  const [record] = records;
+  if (!record) {
+    throw new HttpError(400, "Host did not resolve to an address");
+  }
+
+  return { url: parsed, address: record.address, family: record.family };
+}
+
+function createPinnedDispatcher(address: string, family: number): Agent {
+  return new Agent({
+    connect: {
+      // Reuse the address checked above instead of allowing a second DNS lookup.
+      lookup: (_hostname, _options, callback) => callback(null, address, family),
+    },
+    pipelining: 0,
+  });
 }
 
 export async function fetchRemoteResource(userUrl: string): Promise<Response> {
-  const safeUrl = await assertSafeOutboundUrl(userUrl);
-  return fetch(safeUrl.toString(), {
+  const target = await assertSafeOutboundUrl(userUrl);
+  return fetch(target.url, {
+    dispatcher: createPinnedDispatcher(target.address, target.family),
     redirect: "error",
     signal: AbortSignal.timeout(5000),
   });
@@ -70,8 +94,9 @@ export async function proxyWebhook(
   callbackUrl: string,
   payload: unknown,
 ): Promise<Response> {
-  const safeUrl = await assertSafeOutboundUrl(callbackUrl);
-  return fetch(safeUrl.toString(), {
+  const target = await assertSafeOutboundUrl(callbackUrl);
+  return fetch(target.url, {
+    dispatcher: createPinnedDispatcher(target.address, target.family),
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
