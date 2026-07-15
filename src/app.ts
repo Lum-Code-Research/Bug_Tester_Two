@@ -14,7 +14,22 @@ import { webhooksRouter } from "./routes/webhooks";
 export function createApp() {
   const app = express();
 
-  app.use(helmet({ contentSecurityPolicy: false }));
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        useDefaults: true,
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'"],
+          imgSrc: ["'self'", "data:"],
+          objectSrc: ["'none'"],
+          baseUri: ["'self'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+    }),
+  );
   app.use(
     rateLimit({
       windowMs: 60_000,

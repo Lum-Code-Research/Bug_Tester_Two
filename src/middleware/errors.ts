@@ -1,7 +1,21 @@
 import type { ErrorRequestHandler, NextFunction, Request, Response } from "express";
 
+function sanitizeForLog(value: unknown): string {
+  return String(value)
+    .replace(/[\r\n]+/g, " ")
+    // Remove ASCII control chars without triggering no-control-regex
+    .split("")
+    .filter((ch) => {
+      const code = ch.charCodeAt(0);
+      return code >= 32 && code !== 127;
+    })
+    .join("");
+}
+
 export function requestLogger(req: Request, _res: Response, next: NextFunction): void {
-  console.log(`${req.method} ${req.path}`);
+  const method = sanitizeForLog(req.method);
+  const path = sanitizeForLog(req.path);
+  console.log(`${method} ${path}`);
   next();
 }
 

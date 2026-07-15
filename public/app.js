@@ -96,4 +96,16 @@ document.addEventListener("DOMContentLoaded", () => {
       showResult("webhook-result", result.data);
     });
   }
+
+  const statusEl = document.getElementById("status");
+  if (statusEl) {
+    fetch("/api/status")
+      .then((r) => r.json())
+      .then((data) => {
+        statusEl.textContent = JSON.stringify(data, null, 2);
+      })
+      .catch((err) => {
+        statusEl.textContent = String(err);
+      });
+  }
 });
