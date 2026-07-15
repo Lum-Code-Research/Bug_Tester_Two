@@ -16,8 +16,12 @@ const posts: Post[] = [
 
 let nextId = 2;
 
-export function listPosts(): Post[] {
-  return [...posts].reverse();
+export function listPosts(limit = 20, offset = 0): { items: Post[]; total: number } {
+  const ordered = [...posts].reverse();
+  return {
+    total: ordered.length,
+    items: ordered.slice(offset, offset + limit),
+  };
 }
 
 export function addPost(author: string, body: string): Post {
@@ -33,9 +37,14 @@ export function addPost(author: string, body: string): Post {
 
 export function searchPosts(query: string): Post[] {
   const needle = query.toLowerCase();
-  return posts.filter(
-    (post) =>
-      post.author.toLowerCase().includes(needle) ||
-      post.body.toLowerCase().includes(needle),
-  );
+  if (!needle) {
+    return [...posts].reverse();
+  }
+  return posts
+    .filter(
+      (post) =>
+        post.author.toLowerCase().includes(needle) ||
+        post.body.toLowerCase().includes(needle),
+    )
+    .reverse();
 }

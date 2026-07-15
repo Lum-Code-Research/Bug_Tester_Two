@@ -1,22 +1,24 @@
-import _ from "lodash";
+export type Preferences = {
+  theme: "light" | "dark";
+  compact: boolean;
+};
 
-type Preferences = Record<string, unknown>;
+const DEFAULTS: Preferences = {
+  theme: "light",
+  compact: false,
+};
 
 export function mergeUserPreferences(
-  target: Preferences,
-  input: Preferences,
+  input: Partial<Preferences>,
 ): Preferences {
-  // INTENTIONAL: weak for security Action testing — prototype pollution via unsafe merge
-  for (const key in input) {
-    target[key] = input[key];
-  }
-  return target;
-}
+  const result: Preferences = { ...DEFAULTS };
 
-export function applyThemeSettings(
-  defaults: Preferences,
-  userSettings: Preferences,
-): Preferences {
-  // Uses vulnerable lodash version for Snyk SCA exercise
-  return _.merge({}, defaults, userSettings) as Preferences;
+  if (input.theme === "light" || input.theme === "dark") {
+    result.theme = input.theme;
+  }
+  if (typeof input.compact === "boolean") {
+    result.compact = input.compact;
+  }
+
+  return result;
 }

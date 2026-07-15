@@ -1,3 +1,12 @@
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 async function postJson(url, body) {
   const response = await fetch(url, {
     method: "POST",
@@ -22,13 +31,14 @@ function showResult(elementId, payload) {
 document.addEventListener("DOMContentLoaded", () => {
   const feed = document.getElementById("feed");
   if (feed) {
-    fetch("/api/posts")
+    fetch("/api/posts?limit=20&offset=0")
       .then((r) => r.json())
-      .then((posts) => {
+      .then((payload) => {
+        const posts = payload.items ?? payload;
         feed.innerHTML = posts
           .map(
             (p) =>
-              `<article class="post"><strong>${p.author}</strong><p>${p.body}</p><span class="muted">${p.createdAt}</span></article>`,
+              `<article class="post"><strong>${escapeHtml(p.author)}</strong><p>${escapeHtml(p.body)}</p><span class="muted">${escapeHtml(p.createdAt)}</span></article>`,
           )
           .join("");
       })
@@ -68,8 +78,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (formulaForm) {
     formulaForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const formula = document.getElementById("formula").value;
-      const result = await postJson("/api/evaluate", { formula });
+      const expression = document.getElementById("formula").value;
+      const result = await postJson("/api/evaluate", { expression });
       showResult("formula-result", result.data);
     });
   }

@@ -1,22 +1,33 @@
 import { Router } from "express";
+import { ZodError } from "zod";
+import { HttpError } from "../middleware/errors";
+import { assetQuerySchema, fileQuerySchema } from "../middleware/validation";
 import { readUploadedFile, resolvePublicAsset } from "../services/pathReader";
 
 export const filesRouter = Router();
 
-filesRouter.get("/files/upload", (req, res) => {
-  const filename = String(req.query.file ?? "");
+filesRouter.get("/files/upload", (req, res, next) => {
   try {
-    res.type("text/plain").send(readUploadedFile(filename));
+    const { file } = fileQuerySchema.parse(req.query);
+    res.type("text/plain").send(readUploadedFile(file));
   } catch (error) {
-    res.status(404).type("text/plain").send(String(error));
+    if (error instanceof ZodError) {
+      next(new HttpError(400, error.errors.map((e) => e.message).join("; ")));
+      return;
+    }
+    next(error);
   }
 });
 
-filesRouter.get("/files/public", (req, res) => {
-  const assetPath = String(req.query.path ?? "");
+filesRouter.get("/files/public", (req, res, next) => {
   try {
+    const { path: assetPath } = assetQuerySchema.parse(req.query);
     res.type("text/plain").send(resolvePublicAsset(assetPath));
   } catch (error) {
-    res.status(404).type("text/plain").send(String(error));
+    if (error instanceof ZodError) {
+      next(new HttpError(400, error.errors.map((e) => e.message).join("; ")));
+      return;
+    }
+    next(error);
   }
 });

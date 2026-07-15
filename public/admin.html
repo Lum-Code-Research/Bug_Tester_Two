@@ -35,7 +35,11 @@
         <h2>Run report</h2>
         <form method="GET" action="/api/reports/run">
           <label for="name">Report name</label>
-          <input id="name" name="name" type="text" />
+          <select id="name" name="name">
+            <option value="summary">summary</option>
+            <option value="activity">activity</option>
+            <option value="errors">errors</option>
+          </select>
           <button type="submit">Run</button>
         </form>
       </section>

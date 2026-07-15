@@ -1,5 +1,8 @@
 import express from "express";
 import path from "path";
+import rateLimit from "express-rate-limit";
+import helmet from "helmet";
+import { errorHandler, requestLogger } from "./middleware/errors";
 import { adminRouter } from "./routes/admin";
 import { authRouter } from "./routes/auth";
 import { filesRouter } from "./routes/files";
@@ -11,8 +14,18 @@ import { webhooksRouter } from "./routes/webhooks";
 export function createApp() {
   const app = express();
 
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  app.use(helmet({ contentSecurityPolicy: false }));
+  app.use(
+    rateLimit({
+      windowMs: 60_000,
+      limit: 120,
+      standardHeaders: true,
+      legacyHeaders: false,
+    }),
+  );
+  app.use(requestLogger);
+  app.use(express.json({ limit: "32kb" }));
+  app.use(express.urlencoded({ extended: false }));
   app.use(express.static(path.join(process.cwd(), "public")));
 
   app.get("/health", (_req, res) => {
@@ -27,6 +40,7 @@ export function createApp() {
   app.use("/api", webhooksRouter);
   app.use("/api", prefsRouter);
 
+  app.use(errorHandler);
   return app;
 }
 
