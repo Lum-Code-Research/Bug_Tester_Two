@@ -28,6 +28,7 @@
         <form method="GET" action="/api/proxy">
           <label for="url">URL</label>
           <input id="url" name="url" type="url" placeholder="https://example.com" />
+          <p class="muted">Allowed hosts are configured via ALLOWED_FETCH_HOSTS (default: example.com).</p>
           <button type="submit">Fetch</button>
         </form>
       </section>

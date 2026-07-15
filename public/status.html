@@ -29,16 +29,6 @@
         <pre id="status" class="result">Loading…</pre>
       </section>
     </main>
-    <script>
-      fetch("/api/status")
-        .then((r) => r.json())
-        .then((data) => {
-          document.getElementById("status").textContent = JSON.stringify(
-            data,
-            null,
-            2,
-          );
-        });
-    </script>
+    <script src="/app.js"></script>
   </body>
 </html>

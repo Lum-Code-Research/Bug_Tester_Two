@@ -1,55 +1,91 @@
-import { addPost, listPosts, searchPosts } from "../../src/services/store";
-import { renderSearchPage, renderUserBio } from "../../src/services/html";
+import { escapeHtml, renderSearchPage, renderUserBio } from "../../src/services/html";
 import { mergeUserPreferences } from "../../src/services/merge";
-import { evaluateUserFormula } from "../../src/services/evalFilter";
+import { evaluateArithmetic } from "../../src/services/evalFilter";
 import { getPublicStatus } from "../../src/services/secrets";
+import { readUploadedFile, resolvePublicAsset } from "../../src/services/pathReader";
+import { addPost, listPosts, searchPosts } from "../../src/services/store";
+import { verifyAuthToken, signAuthToken } from "../../src/middleware/auth";
 import { calculateDisplayDuration } from "../../src/utils/calculateDisplayDuration";
+import { HttpError } from "../../src/middleware/errors";
 
 describe("BoardLite store", () => {
-  it("adds and lists posts", () => {
-    const before = listPosts().length;
-    const post = addPost("Test", "Hello board");
-    expect(post.author).toBe("Test");
-    expect(listPosts().length).toBe(before + 1);
+  it("paginates posts", () => {
+    addPost("Pager", "page-me");
+    const page = listPosts(1, 0);
+    expect(page.items).toHaveLength(1);
+    expect(page.total).toBeGreaterThanOrEqual(1);
   });
 
-  it("searches posts by author or body", () => {
+  it("searches posts by body", () => {
     addPost("SearchUser", "unique-needle-xyz");
-    const hits = searchPosts("unique-needle-xyz");
-    expect(hits.some((p) => p.body.includes("unique-needle-xyz"))).toBe(true);
+    expect(searchPosts("unique-needle-xyz").some((p) => p.body.includes("unique-needle-xyz"))).toBe(
+      true,
+    );
   });
 });
 
 describe("BoardLite HTML helpers", () => {
-  it("includes the search query in the result page", () => {
-    // Documents current (unsafe) behavior for Action comparisons
-    const html = renderSearchPage("<b>q</b>", "<p>hit</p>");
-    expect(html).toContain("<b>q</b>");
+  it("escapes HTML in search output", () => {
+    const html = renderSearchPage("<script>alert(1)</script>", "<p>hit</p>");
+    expect(html).toContain("&lt;script&gt;");
+    expect(html).not.toContain("<script>alert(1)</script>");
   });
 
-  it("includes bio HTML without escaping", () => {
+  it("escapes bio content", () => {
     const html = renderUserBio("Ada", "<img src=x>");
-    expect(html).toContain("<img src=x>");
+    expect(html).toContain("&lt;img src=x&gt;");
+  });
+
+  it("escapeHtml encodes reserved characters", () => {
+    expect(escapeHtml(`a&b<"'>`)).toBe("a&amp;b&lt;&quot;&#39;&gt;");
   });
 });
 
 describe("BoardLite preferences and formulas", () => {
-  it("merges preference keys into the target object", () => {
-    const merged = mergeUserPreferences({ theme: "light" }, { compact: true });
-    expect(merged.theme).toBe("light");
-    expect(merged.compact).toBe(true);
+  it("merges only known preference keys", () => {
+    const merged = mergeUserPreferences({ theme: "dark", compact: true });
+    expect(merged).toEqual({ theme: "dark", compact: true });
   });
 
-  it("evaluates a simple arithmetic formula", () => {
-    expect(evaluateUserFormula("2 + 3")).toBe(5);
+  it("evaluates arithmetic without eval", () => {
+    expect(evaluateArithmetic("(2 + 3) * 4")).toBe(20);
+  });
+
+  it("rejects division by zero", () => {
+    expect(() => evaluateArithmetic("1 / 0")).toThrow(HttpError);
+  });
+});
+
+describe("BoardLite path and auth helpers", () => {
+  it("blocks path traversal for uploads", () => {
+    expect(() => readUploadedFile("../package.json")).toThrow(HttpError);
+  });
+
+  it("blocks path traversal for public assets", () => {
+    expect(() => resolvePublicAsset("../package.json")).toThrow(HttpError);
+  });
+
+  it("reads a valid uploaded file", () => {
+    expect(readUploadedFile("notes.txt")).toContain("BoardLite");
+  });
+
+  it("rejects forged JWT tokens", () => {
+    expect(() => verifyAuthToken("not.a.token")).toThrow(HttpError);
+  });
+
+  it("round-trips a valid JWT", () => {
+    const token = signAuthToken({ sub: "1", username: "ada" });
+    expect(verifyAuthToken(token)).toEqual({ sub: "1", username: "ada" });
   });
 });
 
 describe("BoardLite status and timing", () => {
-  it("returns status payload with service name", () => {
+  it("returns public status without secrets", () => {
     const status = getPublicStatus();
     expect(status.service).toBe("BoardLite");
     expect(status.ok).toBe(true);
+    expect(status).not.toHaveProperty("apiKey");
+    expect(status).not.toHaveProperty("databaseUrl");
   });
 
   it("keeps display duration at least 5 seconds for short text", () => {

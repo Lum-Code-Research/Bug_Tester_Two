@@ -1,24 +1,35 @@
 import { Router } from "express";
+import { ZodError } from "zod";
+import { HttpError } from "../middleware/errors";
+import { logSearchQuerySchema, reportQuerySchema } from "../middleware/validation";
 import { runLogSearch, runReportCommand } from "../services/shellTasks";
 
 export const adminRouter = Router();
 
-adminRouter.get("/logs/search", async (req, res) => {
-  const query = String(req.query.q ?? "");
+adminRouter.get("/logs/search", async (req, res, next) => {
   try {
-    const output = await runLogSearch(query);
+    const { q } = logSearchQuerySchema.parse(req.query);
+    const output = await runLogSearch(q);
     res.type("text/plain").send(output);
   } catch (error) {
-    res.status(500).type("text/plain").send(String(error));
+    if (error instanceof ZodError) {
+      next(new HttpError(400, error.errors.map((e) => e.message).join("; ")));
+      return;
+    }
+    next(error);
   }
 });
 
-adminRouter.get("/reports/run", async (req, res) => {
-  const reportName = String(req.query.name ?? "");
+adminRouter.get("/reports/run", async (req, res, next) => {
   try {
-    const output = await runReportCommand(reportName);
+    const { name } = reportQuerySchema.parse(req.query);
+    const output = await runReportCommand(name);
     res.type("text/plain").send(output);
   } catch (error) {
-    res.status(500).type("text/plain").send(String(error));
+    if (error instanceof ZodError) {
+      next(new HttpError(400, error.errors.map((e) => e.message).join("; ")));
+      return;
+    }
+    next(error);
   }
 });

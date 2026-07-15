@@ -1,5 +1,14 @@
-// INTENTIONAL: weak for security Action testing — reflected XSS via unsanitized HTML
+export function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function renderSearchPage(searchQuery: string, matchesHtml: string): string {
+  const safeQuery = escapeHtml(searchQuery);
   return `
     <!DOCTYPE html>
     <html>
@@ -7,7 +16,7 @@ export function renderSearchPage(searchQuery: string, matchesHtml: string): stri
       <body>
         <main class="panel" style="max-width:720px;margin:2rem auto;">
           <h1>Search</h1>
-          <p>You searched for: ${searchQuery}</p>
+          <p>You searched for: ${safeQuery}</p>
           <div>${matchesHtml}</div>
           <p><a href="/search.html">Back</a></p>
         </main>
@@ -16,8 +25,9 @@ export function renderSearchPage(searchQuery: string, matchesHtml: string): stri
   `;
 }
 
-// INTENTIONAL: weak for security Action testing — XSS via unsanitized bio HTML
-export function renderUserBio(displayName: string, bioHtml: string): string {
+export function renderUserBio(displayName: string, bioText: string): string {
+  const safeName = escapeHtml(displayName);
+  const safeBio = escapeHtml(bioText);
   return `
     <!DOCTYPE html>
     <html>
@@ -25,8 +35,8 @@ export function renderUserBio(displayName: string, bioHtml: string): string {
       <body>
         <main class="panel" style="max-width:720px;margin:2rem auto;">
           <section>
-            <h2>${displayName}</h2>
-            <div class="bio">${bioHtml}</div>
+            <h2>${safeName}</h2>
+            <div class="bio">${safeBio}</div>
           </section>
           <p><a href="/post.html">Back</a></p>
         </main>
@@ -35,7 +45,6 @@ export function renderUserBio(displayName: string, bioHtml: string): string {
   `;
 }
 
-export function renderPostPreview(author: string, bodyHtml: string): string {
-  // INTENTIONAL: weak for security Action testing — echoes body as HTML
-  return `<article class="post"><strong>${author}</strong><div>${bodyHtml}</div></article>`;
+export function renderPostPreview(author: string, body: string): string {
+  return `<article class="post"><strong>${escapeHtml(author)}</strong><div>${escapeHtml(body)}</div></article>`;
 }

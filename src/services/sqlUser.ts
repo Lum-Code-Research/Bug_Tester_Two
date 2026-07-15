@@ -1,38 +1,64 @@
 import mysql from "mysql2/promise";
 
-export async function lookupUserByUsername(username: string): Promise<unknown> {
+export interface UserRow {
+  id: number;
+  username: string;
+  email: string;
+}
+
+const offlineUsers: UserRow[] = [
+  { id: 1, username: "ada", email: "ada@example.com" },
+  { id: 2, username: "grace", email: "grace@example.com" },
+];
+
+function useOfflineDb(): boolean {
+  return process.env.USE_OFFLINE_DB !== "false";
+}
+
+export async function lookupUserByUsername(username: string): Promise<UserRow[]> {
+  if (useOfflineDb()) {
+    return offlineUsers.filter(
+      (user) => user.username.toLowerCase() === username.toLowerCase(),
+    );
+  }
+
   const connection = await mysql.createConnection({
     host: process.env.DB_HOST ?? "localhost",
     user: process.env.DB_USER ?? "app",
-    password: process.env.DB_PASSWORD ?? "password",
+    password: process.env.DB_PASSWORD ?? "",
     database: process.env.DB_NAME ?? "app",
   });
 
   try {
-    // INTENTIONAL: weak for security Action testing — SQL built from user input
     const [rows] = await connection.query(
-      `SELECT id, email FROM users WHERE username = '${username}'`,
+      "SELECT id, username, email FROM users WHERE username = ?",
+      [username],
     );
-    return rows;
+    return rows as UserRow[];
   } finally {
     await connection.end();
   }
 }
 
-export async function searchUsersByTerm(term: string): Promise<unknown> {
+export async function searchUsersByTerm(term: string): Promise<UserRow[]> {
+  if (useOfflineDb()) {
+    const needle = term.toLowerCase();
+    return offlineUsers.filter((user) => user.username.toLowerCase().includes(needle));
+  }
+
   const connection = await mysql.createConnection({
     host: process.env.DB_HOST ?? "localhost",
     user: process.env.DB_USER ?? "app",
-    password: process.env.DB_PASSWORD ?? "password",
+    password: process.env.DB_PASSWORD ?? "",
     database: process.env.DB_NAME ?? "app",
   });
 
   try {
-    // INTENTIONAL: weak for security Action testing — concatenated LIKE query
     const [rows] = await connection.query(
-      "SELECT id, username FROM users WHERE username LIKE '%" + term + "%'",
+      "SELECT id, username, email FROM users WHERE username LIKE ?",
+      [`%${term}%`],
     );
-    return rows;
+    return rows as UserRow[];
   } finally {
     await connection.end();
   }
